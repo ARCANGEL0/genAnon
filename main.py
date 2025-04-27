@@ -3,28 +3,26 @@ import tempfile
 import sys
 from TTS.api import TTS
 
+
+
 def generate_speech(prompt: str, out_path: str):
-    """
-    Uses Coqui TTS to render `prompt` to a WAV file with a deeper voice.
-    """
-    tts = TTS(model_name="tts_models/en/vctk/vits",
-              progress_bar=True, gpu=False)
-    # Speaker ID 0-109, try a deeper male voice like 0 or 1
-    speaker_id = 0
-    tts.tts_to_file(text=prompt, speaker=speaker_id, file_path=out_path)
-    
+    tts = TTS(model_name="tts_models/multilingual/multi-dataset/xtts_v2")
+    tts.tts_to_file(text=prompt,language="en", speaker_wav="voice.wav", file_path=out_path)
+
 
 def apply_deep_robotic_filter(input_wav: str, output_wav: str):
     """
-    Creates a deep, robotic, distorted bass voice.
+    Creates a deep, robotic, distorted bass voice with aggressive effects.
     """
     ffmpeg_filter = (
-        "asetrate=44100*0.6,"          # lower pitch (deeper)
-        "aresample=44100,"             # resample to normal rate
-        "atempo=0.85,"                # slow down tempo slightly
-        "bass=g=10:f=110:w=0.8,"      # boost bass frequencies
-        "acrusher=level_in=1:level_out=1:bits=8:mode=log:aa=1,"  # bitcrusher distortion
-        "tremolo=f=8:d=0.7"           # amplitude modulation for robotic effect
+        "asetrate=44100*0.55,"          # lower pitch (deeper)
+        "aresample=44100,"              # resample to normal rate
+        "atempo=0.8,"                  # slow down tempo slightly
+        "bass=g=15:f=80:w=1.0,"        # strong bass boost
+        "acrusher=level_in=1:level_out=1:bits=6:mode=log:aa=1,"  # heavy bitcrusher distortion
+        "tremolo=f=12:d=0.8,"          # faster, deeper tremolo for robotic effect
+        "chorus=0.7:0.9:55:0.4:0.25:2," # subtle chorus for eerie modulation
+        "dynaudnorm=f=200"             # dynamic audio normalization for punch
     )
     subprocess.run([
         "ffmpeg", "-y",
@@ -39,7 +37,7 @@ def mix_with_background(speech_wav: str, bg_path: str, out_mix: str):
     background track.
     """
     filter_complex = (
-        "[1]volume=0.02,aloop=loop=-1:size=2147483647[b];"
+        "[1]volume=0.015,aloop=loop=-1:size=2147483647[b];"
         "[0][b]amix=inputs=2:duration=first:dropout_transition=3"
     )
     subprocess.run([
